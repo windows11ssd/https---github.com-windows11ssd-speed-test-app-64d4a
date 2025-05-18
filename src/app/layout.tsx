@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'NetGauge',
-  description: 'Test your internet speed with NetGauge.',
+  title: 'KSA Test',
+  description: 'Test your internet speed with KSA Test.',
   manifest: '/manifest.json',
   icons: [
     { rel: 'apple-touch-icon', url: '/icons/icon-192x192.png' },

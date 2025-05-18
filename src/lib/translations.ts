@@ -1,3 +1,4 @@
+
 export type Locale = 'en' | 'ar';
 
 export interface Translations {
@@ -23,7 +24,7 @@ export interface Translations {
 
 export const translations: Record<Locale, Translations> = {
   en: {
-    appName: "NetGauge",
+    appName: "KSA Test",
     tagline: "Measure your internet speed accurately.",
     startTest: "Start Test",
     testing: "Testing...",
@@ -35,7 +36,7 @@ export const translations: Record<Locale, Translations> = {
     language: "Language",
     english: "English",
     arabic: "Arabic",
-    installApp: "Install NetGauge",
+    installApp: "Install KSA Test",
     installInstructionsIOS: "To install, tap the Share button and then 'Add to Home Screen'.",
     installInstructionsAndroid: "To install, tap the menu button and then 'Install app' or 'Add to Home Screen'.",
     installInstructionsOther: "Follow your browser's instructions to add this page to your home screen.",
@@ -43,7 +44,7 @@ export const translations: Record<Locale, Translations> = {
     results: "Results"
   },
   ar: {
-    appName: "نت جيج",
+    appName: "كي اس ايه تست",
     tagline: "قم بقياس سرعة الإنترنت لديك بدقة.",
     startTest: "ابدأ الاختبار",
     testing: "جاري الاختبار...",
@@ -55,7 +56,7 @@ export const translations: Record<Locale, Translations> = {
     language: "اللغة",
     english: "الإنجليزية",
     arabic: "العربية",
-    installApp: "تثبيت نت جيج",
+    installApp: "تثبيت كي اس ايه تست",
     installInstructionsIOS: "للتثبيت، اضغط على أيقونة المشاركة ثم 'إضافة إلى الشاشة الرئيسية'.",
     installInstructionsAndroid: "للتثبيت، اضغط على زر القائمة ثم 'تثبيت التطبيق' أو 'إضافة إلى الشاشة الرئيسية'.",
     installInstructionsOther: "اتبع تعليمات متصفحك لإضافة هذه الصفحة إلى شاشتك الرئيسية.",

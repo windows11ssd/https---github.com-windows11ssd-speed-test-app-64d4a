@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -83,7 +84,9 @@ export default function SpeedTestUI() {
 
   return (
     <div className="flex flex-col items-center space-y-8 py-8">
-      <h1 className="text-3xl md:text-4xl font-bold text-center text-primary">{t('appName')}</h1>
+      <h1 className="text-3xl md:text-4xl font-bold text-center">
+        <span className="text-primary">KSA</span><span className="text-accent">test</span>
+      </h1>
       <p className="text-lg text-muted-foreground text-center">{getStatusText()}</p>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
