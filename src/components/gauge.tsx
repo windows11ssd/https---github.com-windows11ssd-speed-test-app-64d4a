@@ -17,14 +17,14 @@ const Gauge: React.FC<GaugeProps> = ({
   maxValue,
   label,
   unit,
-  size = 200,
+  size = 160, // Reduced default size to prevent overflow in 3-column layout
   strokeWidth = 12,
 }) => {
   const [currentValue, setCurrentValue] = useState(0);
 
-  // Configuration for the gauge appearance
-  const visualStartAngle = 165; // SVG angle where the gauge scale starts (0%)
-  const visualSweepAngle = 210; // SVG sweep angle for the gauge scale (100%)
+  // Configuration for the gauge appearance - aiming for Ookla-like wide arc
+  const visualStartAngle = 150; // SVG angle where the gauge scale starts (0%) - e.g., 5 o'clock
+  const visualSweepAngle = 240; // SVG sweep angle for the gauge scale (100%) - wide sweep
 
   // Calculate internal rotation values based on visual parameters
   // Needle points UP (SVG 270 deg) by default before rotation.
@@ -32,8 +32,6 @@ const Gauge: React.FC<GaugeProps> = ({
   const internalNeedleInitialRotation = visualStartAngle - 270;
   // internalPathTransformRotation is the rotation for the arc paths.
   // This aligns the path's drawable segment with the visualStartAngle.
-  // Path definition starts at its 9 o'clock (180deg internal). Arc drawing starts effectively at (180+transform) + (360-sweep).
-  // We want this to be visualStartAngle. So, transform = visualStartAngle - 180 - (360 - visualSweepAngle).
   const internalPathTransformRotation = visualStartAngle - 540 + visualSweepAngle;
 
 
