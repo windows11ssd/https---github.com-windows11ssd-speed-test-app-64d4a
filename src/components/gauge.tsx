@@ -26,9 +26,7 @@ const Gauge: React.FC<GaugeProps> = ({
   const visualStartAngle = 150; 
   const visualSweepAngle = 240; 
 
-  const internalNeedleInitialRotation = visualStartAngle - 270;
-  // Path transform rotation: Not strictly needed if describing arcs from center with start/end angles
-  // const internalPathTransformRotation = visualStartAngle - 540 + visualSweepAngle; 
+  const internalNeedleInitialRotation = visualStartAngle - 270; // Initial rotation to align needle with startAngle visually
 
   useEffect(() => {
     const animationDuration = 500; // ms
@@ -53,27 +51,17 @@ const Gauge: React.FC<GaugeProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
-  // Static bar chart placeholder - moved random factor generation to useEffect
   const barChartHeight = size * 0.15;
   const numBars = 12;
 
   useEffect(() => {
-    // Generate random factors for bar heights only on the client, after mount
     const factors = Array.from({ length: numBars }).map(() => 0.3 + Math.random() * 0.5);
     setSparklineBarRandomFactors(factors);
-  }, [numBars]); // numBars is constant, so this runs once on mount
+  }, [numBars]);
 
-
-  const radius = (size - strokeWidth * 4) / 2; 
-  const circumference = 2 * Math.PI * radius; // Not directly used for dashoffset with new arc method
-  const percentage = Math.min(Math.max(currentValue / maxValue, 0), 1);
-
-  const valueArcFillFraction = percentage * (visualSweepAngle / 360);
-  // const valueArcDashoffset = circumference * (1 - valueArcFillFraction); // Not used with current arc path
-  const rotateAngle = internalNeedleInitialRotation + percentage * visualSweepAngle;
 
   const centerX = size / 2;
-  const centerY = size / 2;
+  const centerY = size / 2; // Assuming SVG is mostly square, slight height diff for bottom label
 
   // Tick configuration
   const numMajorTicks = 5; 
@@ -81,19 +69,33 @@ const Gauge: React.FC<GaugeProps> = ({
   const labelOffset = strokeWidth * 2.5; 
   const scaleColorSplitValue = maxValue / 2;
 
+  // Adjusted radius calculation to ensure labels fit within 'size'
+  // Radius of the circle where label anchors are positioned should be within size/2
+  // (size / 2 * 0.9) reserves 10% of the half-width as outer padding for labels
+  const calculatedRadius = ((size / 2) * 0.90) - labelOffset;
+  const radius = Math.max(10, calculatedRadius); // Ensure radius is at least 10
+
+  const percentage = Math.min(Math.max(currentValue / maxValue, 0), 1);
+  const valueArcFillFraction = percentage * (visualSweepAngle / 360); // This is fraction of 360, not sweepAngle directly
+  const needleRotationAngle = internalNeedleInitialRotation + percentage * visualSweepAngle;
+
+
   const majorTicks = Array.from({ length: numMajorTicks + 1 }).map((_, i) => {
     const tickValue = (maxValue / numMajorTicks) * i;
     const tickPercentage = tickValue / maxValue;
-    const tickAngle = visualStartAngle + tickPercentage * visualSweepAngle;
+    const tickAngle = visualStartAngle + tickPercentage * visualSweepAngle; // SVG angle
     const isOnSecondaryColor = tickValue > scaleColorSplitValue;
 
+    // Tick line coordinates
     const startX = centerX + (radius - majorTickLength / 2) * Math.cos((tickAngle - 90) * Math.PI / 180);
     const startY = centerY + (radius - majorTickLength / 2) * Math.sin((tickAngle - 90) * Math.PI / 180);
     const endX = centerX + (radius + majorTickLength / 2) * Math.cos((tickAngle - 90) * Math.PI / 180);
     const endY = centerY + (radius + majorTickLength / 2) * Math.sin((tickAngle - 90) * Math.PI / 180);
 
-    const labelX = centerX + (radius + labelOffset) * Math.cos((tickAngle - 90) * Math.PI / 180);
-    const labelY = centerY + (radius + labelOffset) * Math.sin((tickAngle - 90) * Math.PI / 180) + (size * 0.02); 
+    // Label coordinates (anchor point of the text)
+    const labelRadius = radius + labelOffset;
+    const labelX = centerX + labelRadius * Math.cos((tickAngle - 90) * Math.PI / 180);
+    const labelY = centerY + labelRadius * Math.sin((tickAngle - 90) * Math.PI / 180) + (size * 0.02); // Small vertical adjustment for text baseline
 
     return {
       value: tickValue,
@@ -114,69 +116,76 @@ const Gauge: React.FC<GaugeProps> = ({
       x: x + r * Math.cos((endAng - 90) * Math.PI / 180),
       y: y + r * Math.sin((endAng - 90) * Math.PI / 180),
     };
-    const largeArcFlag = endAng - startAng <= 180 ? "0" : "1";
+    const arcSweep = endAng - startAng <= 0 ? 360 + endAng - startAng : endAng - startAng; // handle wrap around 360
+    const largeArcFlag = arcSweep <= 180 ? "0" : "1";
     return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`;
   };
-
+  
   const scaleMidAngle = visualStartAngle + (visualSweepAngle / 2);
   const primaryScalePath = describeArc(centerX, centerY, radius, visualStartAngle, scaleMidAngle);
   const secondaryScalePath = describeArc(centerX, centerY, radius, scaleMidAngle, visualStartAngle + visualSweepAngle);
   const backgroundTrackPath = describeArc(centerX, centerY, radius, visualStartAngle, visualStartAngle + visualSweepAngle);
   
+  const valueArcEndAngle = visualStartAngle + percentage * visualSweepAngle;
   const valueArcPath = describeArc(
     centerX, 
     centerY, 
     radius, 
     visualStartAngle, 
-    visualStartAngle + valueArcFillFraction * visualSweepAngle
+    valueArcEndAngle
   );
 
 
-  const barWidth = (size * 0.6) / numBars;
+  const barWidth = (size * 0.6) / numBars; // 60% of gauge size for chart width
   const barSpacing = barWidth * 0.3;
   const barChartStartX = centerX - (numBars * (barWidth + barSpacing) - barSpacing) / 2;
-  const barChartY = size * 0.8;
+  const barChartY = size * 0.80; // Position bar chart lower
 
 
   return (
     <div className="flex flex-col items-center p-2 md:p-4 rounded-lg shadow-md bg-card">
+      {/* SVG ViewBox height is slightly more to accommodate the label below */}
       <svg width={size} height={size * 1.05} viewBox={`0 0 ${size} ${size * 1.05}`}>
+        {/* Background Track for the scale */}
         <path
           d={backgroundTrackPath}
           fill="none"
           className="gauge-scale-background"
           strokeWidth={strokeWidth}
-          strokeLinecap="round"
+          strokeLinecap="round" // Usually round for the main track
         />
+        {/* Primary Color Scale Segment (e.g., first half) */}
         <path
           d={primaryScalePath}
           fill="none"
           className="gauge-scale-primary"
           strokeWidth={strokeWidth}
-          strokeLinecap="butt"
+          strokeLinecap="butt" // Butt to meet secondary part cleanly
         />
+        {/* Secondary Color Scale Segment (e.g., second half) */}
         <path
           d={secondaryScalePath}
           fill="none"
           className="gauge-scale-secondary"
           strokeWidth={strokeWidth}
-          strokeLinecap="butt" 
+          strokeLinecap="butt" // Butt to meet primary part cleanly
         />
 
         {/* Value Arc (filled part) */}
-        {currentValue > 0 && ( // Only render if there's a value to show
+        {currentValue > 0 && (
             <path
             d={valueArcPath}
             fill="none"
             className="gauge-value-arc"
-            strokeWidth={strokeWidth}
-            strokeLinecap="round" // Can be butt if preferred for exact end
+            strokeWidth={strokeWidth} // Should match or be slightly thinner/thicker
+            strokeLinecap="round" 
             style={{
-                transition: 'd 0.5s ease-out, stroke 0.5s ease-out', // Animate path 'd' attribute
+                transition: 'd 0.5s ease-out, stroke 0.5s ease-out',
             }}
             />
         )}
         
+        {/* Tick Marks and Labels */}
         {majorTicks.map((tick) => (
           <g key={`tick-${tick.value}`}>
             <line
@@ -184,75 +193,84 @@ const Gauge: React.FC<GaugeProps> = ({
               y1={tick.startY}
               x2={tick.endX}
               y2={tick.endY}
-              strokeWidth={strokeWidth / 3}
+              strokeWidth={strokeWidth / 3} // Thinner ticks
               className={tick.isSecondary ? "gauge-tick-secondary" : "gauge-tick-primary"}
             />
             <text
               x={tick.labelX}
               y={tick.labelY}
               textAnchor="middle"
+              dominantBaseline="middle" // Better vertical alignment for text
               className={`gauge-tick-label ${tick.isSecondary ? "gauge-tick-label-secondary" : "gauge-tick-label-primary"}`}
-              fontSize={size * 0.065}
+              fontSize={size * 0.065} // Scale font size with gauge size
             >
               {tick.label}
             </text>
           </g>
         ))}
 
+        {/* Unit Text (e.g., Mbps) - Above the value */}
         <text
             x={centerX}
-            y={centerY + size * 0.05} 
+            y={centerY + size * 0.05} // Positioned below hub, above value
             textAnchor="middle"
             className="gauge-unit-text"
-            fontSize={size * 0.08}
+            fontSize={size * 0.08} // Slightly larger than tick labels
         >
             {unit}
         </text>
 
+        {/* Main Value Text */}
         <text
           x={centerX}
-          y={centerY + size * 0.22} 
+          y={centerY + size * 0.22} // Positioned below unit text
           textAnchor="middle"
           className="gauge-main-value-text"
-          fontSize={size * 0.16}
+          fontSize={size * 0.16} // Larger font for the value
           fontWeight="bold"
         >
+          {/* Format to 1 decimal place if not an integer and less than 100, otherwise 0 */}
           {currentValue.toFixed(currentValue !== 0 && currentValue < 100 && !Number.isInteger(currentValue) ? 1 : 0)}
         </text>
 
+        {/* Central Hub Outline */}
         <circle 
             cx={centerX} 
             cy={centerY} 
-            r={strokeWidth * 1.5} 
+            r={strokeWidth * 1.5} // Hub radius based on strokeWidth
             className="gauge-hub-outline"
-            strokeWidth={strokeWidth / 1.5} 
-            fill="hsl(var(--card))" 
+            strokeWidth={strokeWidth / 1.5} // Thinner outline for hub
+            fill="hsl(var(--card))" // Fill with card background or specific color
         />
+        {/* Needle */}
         <line
           x1={centerX}
           y1={centerY}
-          x2={centerX + (radius - strokeWidth*0.5) * Math.cos((rotateAngle - 90) * Math.PI / 180)}
-          y2={centerY + (radius - strokeWidth*0.5) * Math.sin((rotateAngle - 90) * Math.PI / 180)}
-          strokeWidth={strokeWidth / 1.5}
+          // Needle extends from center to slightly less than the arc radius
+          x2={centerX + (radius - strokeWidth*0.5) * Math.cos((needleRotationAngle - 90) * Math.PI / 180)}
+          y2={centerY + (radius - strokeWidth*0.5) * Math.sin((needleRotationAngle - 90) * Math.PI / 180)}
+          strokeWidth={strokeWidth / 1.5} // Needle thickness
           className="gauge-needle"
           strokeLinecap="round"
           style={{
-            transformOrigin: `${centerX}px ${centerY}px`, // Ensure rotation is around the center
-            transform: `rotate(${rotateAngle - internalNeedleInitialRotation}deg)`, // Apply rotation via transform
-            transition: 'transform 0.5s ease-out',
+            transformOrigin: `${centerX}px ${centerY}px`,
+            // No direct rotation needed if x2/y2 are calculated based on angle
+            // If using static needle path and rotating, then use transform: `rotate(${needleRotationAngle - internalNeedleInitialRotation}deg)`
+            // For dynamic x2,y2, direct transform might not be needed or could cause double rotation
+            transition: 'x2 0.5s ease-out, y2 0.5s ease-out, stroke 0.5s ease-out', // Animate line end points
           }}
         />
         
+        {/* Static Sparkline/Bar Chart Placeholder */}
         <g className="static-sparkline">
           {Array.from({ length: numBars }).map((_, i) => {
-            // Use a default factor if sparklineBarRandomFactors is not yet populated (SSR or initial client render)
-            const randomFactor = sparklineBarRandomFactors.length > 0 ? sparklineBarRandomFactors[i] : 0.5;
+            const randomFactor = sparklineBarRandomFactors.length > 0 ? sparklineBarRandomFactors[i] : 0.5; // Use state or default
             const barHeightValue = barChartHeight * randomFactor;
             return (
               <rect
                 key={`bar-${i}`}
                 x={barChartStartX + i * (barWidth + barSpacing)}
-                y={barChartY + (barChartHeight - barHeightValue)}
+                y={barChartY + (barChartHeight - barHeightValue)} // Align bars to their baseline
                 width={barWidth}
                 height={barHeightValue}
                 className="gauge-sparkline-bar"
@@ -262,9 +280,12 @@ const Gauge: React.FC<GaugeProps> = ({
         </g>
 
       </svg>
+      {/* Label below the gauge (e.g., Download, Upload) */}
       <p className="mt-1 text-base md:text-lg font-medium text-foreground">{label}</p>
     </div>
   );
 };
 
 export default Gauge;
+
+
