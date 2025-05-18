@@ -30,19 +30,14 @@ const fileSizeOptions = [
   { value: 1000, label: "1000 MB" },
 ];
 
-const DOWNLOAD_BASE_URL = "https://proof.platform.athena.com/files/";
+const CACHEFLY_BASE_URL = "https://cachefly.cachefly.net/";
 const UPLOAD_URL = "https://httpbin.org/post"; // Public endpoint that echoes POST data
-const PING_URL_BASE = "https://proof.platform.athena.com/files/1KB.bin"; // Small file for ping
+const PING_URL = `${CACHEFLY_BASE_URL}1kb.test`; // Small file for ping
 
-// Helper to get appropriate download file and iteration count
-const getDownloadFileConfig = (selectedSizeMB: number): { url: string, iterations: number, actualSizeMBPerIteration: number } => {
-  if (selectedSizeMB <= 1) return { url: `${DOWNLOAD_BASE_URL}1MB.bin`, iterations: 1, actualSizeMBPerIteration: 1 };
-  if (selectedSizeMB <= 5) return { url: `${DOWNLOAD_BASE_URL}5MB.bin`, iterations: 1, actualSizeMBPerIteration: 5 };
-  if (selectedSizeMB <= 10) return { url: `${DOWNLOAD_BASE_URL}10MB.bin`, iterations: 1, actualSizeMBPerIteration: 10 };
-  if (selectedSizeMB <= 50) return { url: `${DOWNLOAD_BASE_URL}50MB.bin`, iterations: 1, actualSizeMBPerIteration: 50 };
-  if (selectedSizeMB <= 100) return { url: `${DOWNLOAD_BASE_URL}100MB.bin`, iterations: 1, actualSizeMBPerIteration: 100 };
-  if (selectedSizeMB <= 500) return { url: `${DOWNLOAD_BASE_URL}100MB.bin`, iterations: 5, actualSizeMBPerIteration: 100 }; // 5x100MB
-  return { url: `${DOWNLOAD_BASE_URL}100MB.bin`, iterations: 10, actualSizeMBPerIteration: 100 }; // 10x100MB for 1000MB
+// Helper to get appropriate download file config from Cachefly
+const getDownloadFileConfig = (selectedSizeMB: number): { url: string, actualSizeMB: number } => {
+  const fileName = `${selectedSizeMB}mb.test`;
+  return { url: `${CACHEFLY_BASE_URL}${fileName}`, actualSizeMB: selectedSizeMB };
 };
 
 export default function SpeedTestUI() {
@@ -55,7 +50,6 @@ export default function SpeedTestUI() {
   const [selectedFileSize, setSelectedFileSize] = useState<number>(50); // Default 50MB
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Abort controller for fetch requests
   const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   const resetSpeeds = () => {
@@ -66,79 +60,67 @@ export default function SpeedTestUI() {
   };
 
   const measureDownloadSpeed = async (fileSizeMB: number, controller: AbortController) => {
-    const { url: baseUrl, iterations, actualSizeMBPerIteration } = getDownloadFileConfig(fileSizeMB);
-    let totalBytesDownloaded = 0;
-    let totalTimeSeconds = 0;
-
-    for (let i = 0; i < iterations; i++) {
-      if (controller.signal.aborted) throw new Error("Download aborted by user");
-      
-      const cacheBuster = `?r=${Math.random()}`;
-      const currentUrl = baseUrl + cacheBuster;
-      const startTime = performance.now();
-      let receivedLength = 0;
-
-      try {
-        const response = await fetch(currentUrl, { signal: controller.signal, mode: 'cors' });
-        if (!response.ok) throw new Error(`Download failed: ${response.statusText} for ${currentUrl}`);
-        if (!response.body) throw new Error("ReadableStream not available for download.");
-
-        const reader = response.body.getReader();
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          if (controller.signal.aborted) {
-            reader.cancel("Download aborted by user");
-            throw new Error("Download aborted by user");
-          }
-          const { done, value } = await reader.read();
-          if (done) break;
-          
-          receivedLength += value.length;
-          totalBytesDownloaded += value.length;
-          const elapsedTimeIteration = (performance.now() - startTime) / 1000;
-          const currentTotalElapsedTime = totalTimeSeconds + elapsedTimeIteration;
-
-          if (currentTotalElapsedTime > 0) {
-            const speedMbps = (totalBytesDownloaded * 8) / currentTotalElapsedTime / 1000000;
-            setDownloadSpeed(speedMbps);
-          }
-        }
-        const iterationTimeSeconds = (performance.now() - startTime) / 1000;
-        totalTimeSeconds += iterationTimeSeconds;
-
-      } catch (error: any) {
-        if (error.name === 'AbortError') {
-          console.log("Download fetch aborted.");
-          throw error;
-        }
-        console.error("Download error in iteration:", error);
-        setErrorMessage(t('download') + ' ' + t('testing') + ' Error: ' + error.message);
-        throw error; // Propagate error to stop test
-      }
-    }
+    const { url } = getDownloadFileConfig(fileSizeMB);
     
-    if (totalTimeSeconds > 0) {
-      const finalSpeedMbps = (totalBytesDownloaded * 8) / totalTimeSeconds / 1000000;
-      setDownloadSpeed(finalSpeedMbps);
-      return finalSpeedMbps;
+    const cacheBuster = `?r=${Math.random()}`;
+    const currentUrl = url + cacheBuster;
+    const startTime = performance.now();
+    let receivedLength = 0;
+
+    try {
+      const response = await fetch(currentUrl, { signal: controller.signal, mode: 'cors' });
+      if (!response.ok) throw new Error(`Download failed: ${response.statusText} for ${currentUrl}`);
+      if (!response.body) throw new Error("ReadableStream not available for download.");
+
+      const reader = response.body.getReader();
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        if (controller.signal.aborted) {
+          reader.cancel("Download aborted by user");
+          throw new Error("Download aborted by user");
+        }
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        receivedLength += value.length;
+        const elapsedTime = (performance.now() - startTime) / 1000;
+
+        if (elapsedTime > 0) {
+          const speedMbps = (receivedLength * 8) / elapsedTime / 1000000;
+          setDownloadSpeed(speedMbps); // Update speed progressively
+        }
+      }
+      const totalTimeSeconds = (performance.now() - startTime) / 1000;
+
+      if (totalTimeSeconds > 0) {
+        const finalSpeedMbps = (receivedLength * 8) / totalTimeSeconds / 1000000;
+        setDownloadSpeed(finalSpeedMbps); // Set final speed
+        return finalSpeedMbps;
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log("Download fetch aborted.");
+        throw error;
+      }
+      console.error("Download error:", error);
+      setErrorMessage(t('download') + ' ' + t('testing') + ' Error: ' + error.message);
+      throw error; // Propagate error to stop test
     }
     return 0;
   };
 
   const measureUploadSpeed = async (controller: AbortController) => {
-    // Simulate by POSTing a smaller, fixed amount of data, e.g., 5MB
-    const uploadDataSizeMB = Math.min(selectedFileSize, 5); // Cap actual upload data size for quick test
+    const uploadDataSizeMB = Math.min(selectedFileSize, 5); 
     const dataSizeInBytes = uploadDataSizeMB * 1024 * 1024;
     const randomData = new Uint8Array(dataSizeInBytes);
-    crypto.getRandomValues(randomData); // Fill with random data
+    crypto.getRandomValues(randomData); 
     const blob = new Blob([randomData]);
 
     const startTime = performance.now();
     try {
-      // Simulate progress visually
       for (let p = 0; p <= 100; p += 10) {
         if (controller.signal.aborted) throw new Error("Upload aborted by user");
-        setUploadSpeed(p * (Math.random()*0.5 + 0.5) * (uploadDataSizeMB / 2) ); // Rough visual simulation
+        setUploadSpeed(p * (Math.random()*0.5 + 0.5) * (uploadDataSizeMB / 2) ); 
         await new Promise(resolve => setTimeout(resolve, 50));
       }
 
@@ -170,21 +152,19 @@ export default function SpeedTestUI() {
       if (controller.signal.aborted) throw new Error("Ping aborted by user");
       const startTime = performance.now();
       try {
-        await fetch(`${PING_URL_BASE}?r=${Math.random()}&i=${i}`, { method: 'HEAD', signal: controller.signal, mode: 'cors' });
+        await fetch(`${PING_URL}?r=${Math.random()}&i=${i}`, { method: 'HEAD', signal: controller.signal, mode: 'cors' });
         const endTime = performance.now();
         const currentPing = endTime - startTime;
         totalPingTime += currentPing;
         successfulPings++;
-        setPing(totalPingTime / successfulPings); // Update with average so far
-        await new Promise(resolve => setTimeout(resolve, 100)); // Small delay between pings
+        setPing(totalPingTime / successfulPings); 
+        await new Promise(resolve => setTimeout(resolve, 100)); 
       } catch (error: any) {
          if (error.name === 'AbortError') {
             console.log("Ping fetch aborted.");
             throw error;
           }
         console.error("Ping error:", error);
-        // Don't stop the whole test for a single ping error, but log it
-        // If all pings fail, the ping will remain 0 or the last successful average.
       }
     }
 
@@ -235,9 +215,9 @@ export default function SpeedTestUI() {
         setStatus('idle');
       }
     } finally {
-      setAbortController(null); // Clear abort controller
+      setAbortController(null); 
     }
-  }, [t, showToast, selectedFileSize]); // Added selectedFileSize to dependencies
+  }, [t, showToast, selectedFileSize]);
 
   const handleStartOrCancelTest = () => {
     if (status === 'idle' || status === 'finished' || status === 'error') {
@@ -253,7 +233,7 @@ export default function SpeedTestUI() {
 
   const getButtonText = () => {
     if (status === 'idle' || status === 'error') return t('startTest');
-    if (status.startsWith('testing')) return t('testing') + "... (" + t('cancel') + ")"; // Added cancel
+    if (status.startsWith('testing')) return t('testing') + "... (" + t('cancel') + ")";
     if (status === 'finished') return t('startTest'); 
     return t('startTest');
   };
@@ -339,4 +319,3 @@ export default function SpeedTestUI() {
     </div>
   );
 }
-
