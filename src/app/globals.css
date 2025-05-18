@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -48,6 +49,16 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* New Gauge Specific Colors (Inspired by image) */
+    --gauge-scale-bg-color: 220 15% 25%; /* Darker blue-gray for track */
+    --gauge-scale-primary-color: 190 80% 60%; /* Cyan-ish blue for first half of scale/ticks */
+    --gauge-scale-secondary-color: 15 90% 55%; /* Orange-red for second half of scale/ticks */
+    --gauge-needle-color: 15 90% 55%; /* Orange-red for needle and value arc */
+    --gauge-hub-outline-color: 190 80% 60%; /* Cyan-ish blue for hub outline */
+    --gauge-text-color: 240 25% 98%; /* Light Gray/White for text inside gauge */
+    --gauge-muted-text-color: 240 10% 70%; /* Muted for unit text */
+    --gauge-sparkline-bar-color: 220 15% 40%; /* Muted for sparkline */
   }
 
   .dark {
@@ -93,6 +104,16 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Dark Theme Gauge Colors */
+    --gauge-scale-bg-color: 220 15% 20%; /* Even darker for track in dark mode */
+    --gauge-scale-primary-color: 190 75% 65%; 
+    --gauge-scale-secondary-color: 15 85% 60%; 
+    --gauge-needle-color: 15 85% 60%; 
+    --gauge-hub-outline-color: 190 75% 65%;
+    --gauge-text-color: 240 25% 95%;
+    --gauge-muted-text-color: 240 10% 65%;
+    --gauge-sparkline-bar-color: 220 15% 35%;
   }
 }
 
@@ -111,39 +132,69 @@
   }
 }
 
-/* Custom class for the gauge arc fill */
-.gauge-arc-fill {
-  stroke: hsl(var(--primary)); /* Purple */
+/* Gauge specific styles */
+.gauge-scale-background {
+  stroke: hsl(var(--gauge-scale-bg-color));
 }
-.dark .gauge-arc-fill {
-  stroke: hsl(var(--primary)); /* Lighter Purple in dark mode */
+.gauge-scale-primary {
+  stroke: hsl(var(--gauge-scale-primary-color));
 }
-
-.gauge-arc-bg {
-  stroke: hsl(var(--muted));
+.gauge-scale-secondary {
+  stroke: hsl(var(--gauge-scale-secondary-color));
 }
-.dark .gauge-arc-bg {
-  stroke: hsl(var(--muted));
+.gauge-value-arc {
+  stroke: hsl(var(--gauge-needle-color));
 }
-
 .gauge-needle {
-  fill: hsl(var(--foreground));
+  stroke: hsl(var(--gauge-needle-color));
+  fill: hsl(var(--gauge-needle-color));
 }
-.dark .gauge-needle {
-  fill: hsl(var(--foreground));
-}
-
-.gauge-value-text {
-  fill: hsl(var(--primary));
-  font-weight: bold;
-}
-.dark .gauge-value-text {
-  fill: hsl(var(--primary));
+.gauge-hub-outline {
+  stroke: hsl(var(--gauge-hub-outline-color));
+  /* fill is set inline in component to var(--card) or specific color */
 }
 
-.gauge-label-text {
-  fill: hsl(var(--muted-foreground));
+.gauge-tick-primary {
+  stroke: hsl(var(--gauge-scale-primary-color));
 }
-.dark .gauge-label-text {
-  fill: hsl(var(--muted-foreground));
+.gauge-tick-secondary {
+  stroke: hsl(var(--gauge-scale-secondary-color));
 }
+.gauge-tick-label,
+.gauge-tick-label-primary,
+.gauge-tick-label-secondary {
+  fill: hsl(var(--gauge-text-color));
+  font-weight: 500;
+}
+/* If specific color for labels needed based on segment: */
+/*
+.gauge-tick-label-primary { fill: hsl(var(--gauge-scale-primary-color)); }
+.gauge-tick-label-secondary { fill: hsl(var(--gauge-scale-secondary-color)); }
+*/
+
+.gauge-main-value-text {
+  fill: hsl(var(--gauge-text-color));
+}
+.gauge-unit-text {
+  fill: hsl(var(--gauge-muted-text-color));
+}
+
+.gauge-sparkline-bar {
+  fill: hsl(var(--gauge-sparkline-bar-color));
+}
+
+/* Old gauge classes (can be removed if no longer used, or kept for backward compatibility if this is a new component) */
+/* Ensure these do not conflict if they were very generic */
+.gauge-arc-fill { /* This was the old value arc color - now gauge-value-arc */
+  /* stroke: hsl(var(--primary)); */
+}
+.gauge-arc-bg { /* This was the old background arc - now gauge-scale-background */
+  /* stroke: hsl(var(--muted)); */
+}
+/* .gauge-needle - updated above */
+/* .gauge-value-text - now gauge-main-value-text */
+/* .gauge-label-text - this was for the unit, now gauge-unit-text */
+/* The external label (Download, Ping etc.) uses text-foreground directly */
+
+
+    
