@@ -52,7 +52,7 @@ const Gauge: React.FC<GaugeProps> = ({
 
 
   const centerX = size / 2;
-  const centerY = size / 2; // Assuming SVG is mostly square, slight height diff for bottom label
+  const centerY = size / 2; 
 
   // Tick configuration
   const numMajorTicks = 5; 
@@ -83,7 +83,7 @@ const Gauge: React.FC<GaugeProps> = ({
     // Label coordinates (anchor point of the text)
     const labelRadius = radius + labelOffset;
     const labelX = centerX + labelRadius * Math.cos((tickAngle - 90) * Math.PI / 180);
-    const labelY = centerY + labelRadius * Math.sin((tickAngle - 90) * Math.PI / 180) + (size * 0.02); // Small vertical adjustment for text baseline
+    const labelY = centerY + labelRadius * Math.sin((tickAngle - 90) * Math.PI / 180); // Removed + (size * 0.02)
 
     return {
       value: tickValue,
@@ -104,7 +104,7 @@ const Gauge: React.FC<GaugeProps> = ({
       x: x + r * Math.cos((endAng - 90) * Math.PI / 180),
       y: y + r * Math.sin((endAng - 90) * Math.PI / 180),
     };
-    const arcSweep = endAng - startAng <= 0 ? 360 + endAng - startAng : endAng - startAng; // handle wrap around 360
+    const arcSweep = endAng - startAng <= 0 ? 360 + endAng - startAng : endAng - startAng; 
     const largeArcFlag = arcSweep <= 180 ? "0" : "1";
     return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`;
   };
@@ -125,40 +125,35 @@ const Gauge: React.FC<GaugeProps> = ({
 
   return (
     <div className="flex flex-col items-center p-2 md:p-4 rounded-lg shadow-md bg-card">
-      {/* SVG ViewBox height is slightly more to accommodate the label below */}
       <svg width={size} height={size * 1.05} viewBox={`0 0 ${size} ${size * 1.05}`}>
-        {/* Background Track for the scale */}
         <path
           d={backgroundTrackPath}
           fill="none"
           className="gauge-scale-background"
           strokeWidth={strokeWidth}
-          strokeLinecap="round" // Usually round for the main track
+          strokeLinecap="round" 
         />
-        {/* Primary Color Scale Segment (e.g., first half) */}
         <path
           d={primaryScalePath}
           fill="none"
           className="gauge-scale-primary"
           strokeWidth={strokeWidth}
-          strokeLinecap="butt" // Butt to meet secondary part cleanly
+          strokeLinecap="butt" 
         />
-        {/* Secondary Color Scale Segment (e.g., second half) */}
         <path
           d={secondaryScalePath}
           fill="none"
           className="gauge-scale-secondary"
           strokeWidth={strokeWidth}
-          strokeLinecap="butt" // Butt to meet primary part cleanly
+          strokeLinecap="butt" 
         />
 
-        {/* Value Arc (filled part) */}
         {currentValue > 0 && (
             <path
             d={valueArcPath}
             fill="none"
             className="gauge-value-arc"
-            strokeWidth={strokeWidth} // Should match or be slightly thinner/thicker
+            strokeWidth={strokeWidth} 
             strokeLinecap="round" 
             style={{
                 transition: 'd 0.5s ease-out, stroke 0.5s ease-out',
@@ -166,7 +161,6 @@ const Gauge: React.FC<GaugeProps> = ({
             />
         )}
         
-        {/* Tick Marks and Labels */}
         {majorTicks.map((tick) => (
           <g key={`tick-${tick.value}`}>
             <line
@@ -174,75 +168,69 @@ const Gauge: React.FC<GaugeProps> = ({
               y1={tick.startY}
               x2={tick.endX}
               y2={tick.endY}
-              strokeWidth={strokeWidth / 3} // Thinner ticks
+              strokeWidth={strokeWidth / 3} 
               className={tick.isSecondary ? "gauge-tick-secondary" : "gauge-tick-primary"}
             />
             <text
               x={tick.labelX}
               y={tick.labelY}
               textAnchor="middle"
-              dominantBaseline="middle" // Better vertical alignment for text
+              dominantBaseline="middle" 
               className={`gauge-tick-label ${tick.isSecondary ? "gauge-tick-label-secondary" : "gauge-tick-label-primary"}`}
-              fontSize={size * 0.065} // Scale font size with gauge size
+              fontSize={size * 0.065} 
             >
               {tick.label}
             </text>
           </g>
         ))}
 
-        {/* Unit Text (e.g., Mbps) - Above the value */}
         <text
             x={centerX}
-            y={centerY + size * 0.05} // Positioned below hub, above value
+            y={centerY + size * 0.05} 
             textAnchor="middle"
             className="gauge-unit-text"
-            fontSize={size * 0.08} // Slightly larger than tick labels
+            fontSize={size * 0.08} 
         >
             {unit}
         </text>
 
-        {/* Main Value Text */}
         <text
           x={centerX}
-          y={centerY + size * 0.22} // Positioned below unit text
+          y={centerY + size * 0.22} 
           textAnchor="middle"
           className="gauge-main-value-text"
-          fontSize={size * 0.16} // Larger font for the value
+          fontSize={size * 0.16} 
           fontWeight="bold"
         >
-          {/* Format to 1 decimal place if not an integer and less than 100, otherwise 0 */}
           {currentValue.toFixed(currentValue !== 0 && currentValue < 100 && !Number.isInteger(currentValue) ? 1 : 0)}
         </text>
 
-        {/* Central Hub Outline */}
         <circle 
             cx={centerX} 
             cy={centerY} 
-            r={strokeWidth * 1.5} // Hub radius based on strokeWidth
+            r={strokeWidth * 1.5} 
             className="gauge-hub-outline"
-            strokeWidth={strokeWidth / 1.5} // Thinner outline for hub
-            fill="hsl(var(--card))" // Fill with card background or specific color
+            strokeWidth={strokeWidth / 1.5} 
+            fill="hsl(var(--card))" 
         />
-        {/* Needle */}
         <line
           x1={centerX}
           y1={centerY}
-          // Needle extends from center to slightly less than the arc radius
           x2={centerX + (radius - strokeWidth*0.5) * Math.cos((needleRotationAngle - 90) * Math.PI / 180)}
           y2={centerY + (radius - strokeWidth*0.5) * Math.sin((needleRotationAngle - 90) * Math.PI / 180)}
-          strokeWidth={strokeWidth / 1.5} // Needle thickness
+          strokeWidth={strokeWidth / 1.5} 
           className="gauge-needle"
           strokeLinecap="round"
           style={{
             transformOrigin: `${centerX}px ${centerY}px`,
-            transition: 'x2 0.5s ease-out, y2 0.5s ease-out, stroke 0.5s ease-out', // Animate line end points
+            transition: 'x2 0.5s ease-out, y2 0.5s ease-out, stroke 0.5s ease-out', 
           }}
         />
       </svg>
-      {/* Label below the gauge (e.g., Download, Upload) */}
       <p className="mt-1 text-base md:text-lg font-medium text-foreground">{label}</p>
     </div>
   );
 };
 
 export default Gauge;
+
