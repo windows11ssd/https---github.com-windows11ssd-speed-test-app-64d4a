@@ -21,7 +21,6 @@ const Gauge: React.FC<GaugeProps> = ({
   strokeWidth = 8,
 }) => {
   const [currentValue, setCurrentValue] = useState(0);
-  const [sparklineBarRandomFactors, setSparklineBarRandomFactors] = useState<number[]>([]);
 
   const visualStartAngle = 150; 
   const visualSweepAngle = 240; 
@@ -51,14 +50,6 @@ const Gauge: React.FC<GaugeProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
-  const barChartHeight = size * 0.15;
-  const numBars = 12;
-
-  useEffect(() => {
-    const factors = Array.from({ length: numBars }).map(() => 0.3 + Math.random() * 0.5);
-    setSparklineBarRandomFactors(factors);
-  }, [numBars]);
-
 
   const centerX = size / 2;
   const centerY = size / 2; // Assuming SVG is mostly square, slight height diff for bottom label
@@ -70,13 +61,10 @@ const Gauge: React.FC<GaugeProps> = ({
   const scaleColorSplitValue = maxValue / 2;
 
   // Adjusted radius calculation to ensure labels fit within 'size'
-  // Radius of the circle where label anchors are positioned should be within size/2
-  // (size / 2 * 0.9) reserves 10% of the half-width as outer padding for labels
   const calculatedRadius = ((size / 2) * 0.90) - labelOffset;
   const radius = Math.max(10, calculatedRadius); // Ensure radius is at least 10
 
   const percentage = Math.min(Math.max(currentValue / maxValue, 0), 1);
-  const valueArcFillFraction = percentage * (visualSweepAngle / 360); // This is fraction of 360, not sweepAngle directly
   const needleRotationAngle = internalNeedleInitialRotation + percentage * visualSweepAngle;
 
 
@@ -134,13 +122,6 @@ const Gauge: React.FC<GaugeProps> = ({
     visualStartAngle, 
     valueArcEndAngle
   );
-
-
-  const barWidth = (size * 0.6) / numBars; // 60% of gauge size for chart width
-  const barSpacing = barWidth * 0.3;
-  const barChartStartX = centerX - (numBars * (barWidth + barSpacing) - barSpacing) / 2;
-  const barChartY = size * 0.80; // Position bar chart lower
-
 
   return (
     <div className="flex flex-col items-center p-2 md:p-4 rounded-lg shadow-md bg-card">
@@ -254,31 +235,9 @@ const Gauge: React.FC<GaugeProps> = ({
           strokeLinecap="round"
           style={{
             transformOrigin: `${centerX}px ${centerY}px`,
-            // No direct rotation needed if x2/y2 are calculated based on angle
-            // If using static needle path and rotating, then use transform: `rotate(${needleRotationAngle - internalNeedleInitialRotation}deg)`
-            // For dynamic x2,y2, direct transform might not be needed or could cause double rotation
             transition: 'x2 0.5s ease-out, y2 0.5s ease-out, stroke 0.5s ease-out', // Animate line end points
           }}
         />
-        
-        {/* Static Sparkline/Bar Chart Placeholder */}
-        <g className="static-sparkline">
-          {Array.from({ length: numBars }).map((_, i) => {
-            const randomFactor = sparklineBarRandomFactors.length > 0 ? sparklineBarRandomFactors[i] : 0.5; // Use state or default
-            const barHeightValue = barChartHeight * randomFactor;
-            return (
-              <rect
-                key={`bar-${i}`}
-                x={barChartStartX + i * (barWidth + barSpacing)}
-                y={barChartY + (barChartHeight - barHeightValue)} // Align bars to their baseline
-                width={barWidth}
-                height={barHeightValue}
-                className="gauge-sparkline-bar"
-              />
-            );
-          })}
-        </g>
-
       </svg>
       {/* Label below the gauge (e.g., Download, Upload) */}
       <p className="mt-1 text-base md:text-lg font-medium text-foreground">{label}</p>
@@ -287,5 +246,3 @@ const Gauge: React.FC<GaugeProps> = ({
 };
 
 export default Gauge;
-
-
