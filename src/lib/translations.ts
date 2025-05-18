@@ -20,6 +20,8 @@ export interface Translations {
   installInstructionsOther: string;
   close: string;
   results: string;
+  fileSize: string;
+  selectFileSize: string;
 }
 
 export const translations: Record<Locale, Translations> = {
@@ -41,7 +43,9 @@ export const translations: Record<Locale, Translations> = {
     installInstructionsAndroid: "To install, tap the menu button and then 'Install app' or 'Add to Home Screen'.",
     installInstructionsOther: "Follow your browser's instructions to add this page to your home screen.",
     close: "Close",
-    results: "Results"
+    results: "Results",
+    fileSize: "File Size",
+    selectFileSize: "Select file size",
   },
   ar: {
     appName: "كي اس ايه تست",
@@ -61,6 +65,8 @@ export const translations: Record<Locale, Translations> = {
     installInstructionsAndroid: "للتثبيت، اضغط على زر القائمة ثم 'تثبيت التطبيق' أو 'إضافة إلى الشاشة الرئيسية'.",
     installInstructionsOther: "اتبع تعليمات متصفحك لإضافة هذه الصفحة إلى شاشتك الرئيسية.",
     close: "إغلاق",
-    results: "النتائج"
+    results: "النتائج",
+    fileSize: "حجم الملف",
+    selectFileSize: "اختر حجم الملف",
   },
 };
