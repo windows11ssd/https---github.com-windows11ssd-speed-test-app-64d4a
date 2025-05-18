@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -20,6 +21,21 @@ const Gauge: React.FC<GaugeProps> = ({
   strokeWidth = 12,
 }) => {
   const [currentValue, setCurrentValue] = useState(0);
+
+  // Configuration for the gauge appearance
+  const visualStartAngle = 165; // SVG angle where the gauge scale starts (0%)
+  const visualSweepAngle = 210; // SVG sweep angle for the gauge scale (100%)
+
+  // Calculate internal rotation values based on visual parameters
+  // Needle points UP (SVG 270 deg) by default before rotation.
+  // internalNeedleInitialRotation is the rotation to apply to the needle to make it point to visualStartAngle.
+  const internalNeedleInitialRotation = visualStartAngle - 270;
+  // internalPathTransformRotation is the rotation for the arc paths.
+  // This aligns the path's drawable segment with the visualStartAngle.
+  // Path definition starts at its 9 o'clock (180deg internal). Arc drawing starts effectively at (180+transform) + (360-sweep).
+  // We want this to be visualStartAngle. So, transform = visualStartAngle - 180 - (360 - visualSweepAngle).
+  const internalPathTransformRotation = visualStartAngle - 540 + visualSweepAngle;
+
 
   useEffect(() => {
     const animationDuration = 500; // ms
@@ -50,13 +66,18 @@ const Gauge: React.FC<GaugeProps> = ({
 
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const angleOffset = -225; // Start angle at -135 degrees (bottom-left)
-  const totalAngle = 270; // Gauge arc spans 270 degrees
-
+  
   const percentage = Math.min(Math.max(currentValue / maxValue, 0), 1);
-  const strokeDashoffset = circumference * (1 - (percentage * (totalAngle / 360)) / (270/360) ); // Adjust offset calculation for 270 degree arc
 
-  const rotateAngle = angleOffset + percentage * totalAngle;
+  // Stroke dashoffset for the background arc
+  const backgroundArcDashoffset = circumference * (1 - (visualSweepAngle / 360));
+  
+  // Stroke dashoffset for the value arc
+  const valueArcFillFraction = percentage * (visualSweepAngle / 360);
+  const valueArcDashoffset = circumference * (1 - valueArcFillFraction);
+
+  // Needle rotation: starts at `internalNeedleInitialRotation` and sweeps by `visualSweepAngle`
+  const rotateAngle = internalNeedleInitialRotation + percentage * visualSweepAngle;
 
   return (
     <div className="flex flex-col items-center p-4 rounded-lg shadow-md bg-card">
@@ -69,10 +90,10 @@ const Gauge: React.FC<GaugeProps> = ({
           className="gauge-arc-bg"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
-          transform={`rotate(${angleOffset} ${size / 2} ${size / 2})`}
+          transform={`rotate(${internalPathTransformRotation} ${size / 2} ${size / 2})`}
           style={{
             strokeDasharray: circumference,
-            strokeDashoffset: circumference * (1 - (totalAngle / 360)) , // Show only 270 degree portion
+            strokeDashoffset: backgroundArcDashoffset,
           }}
         />
         {/* Value Arc */}
@@ -83,10 +104,10 @@ const Gauge: React.FC<GaugeProps> = ({
           className="gauge-arc-fill"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
-          transform={`rotate(${angleOffset} ${size / 2} ${size / 2})`}
+          transform={`rotate(${internalPathTransformRotation} ${size / 2} ${size / 2})`}
           style={{
             strokeDasharray: circumference,
-            strokeDashoffset: strokeDashoffset,
+            strokeDashoffset: valueArcDashoffset,
             transition: 'stroke-dashoffset 0.5s ease-out',
           }}
         />
@@ -97,7 +118,7 @@ const Gauge: React.FC<GaugeProps> = ({
           x1={size / 2}
           y1={size / 2}
           x2={size / 2}
-          y2={strokeWidth * 1.5}
+          y2={strokeWidth * 1.5} // Needle points upwards before rotation
           strokeWidth={strokeWidth / 3}
           className="gauge-needle"
           strokeLinecap="round"
@@ -133,4 +154,3 @@ const Gauge: React.FC<GaugeProps> = ({
 };
 
 export default Gauge;
-

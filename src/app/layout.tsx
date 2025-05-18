@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#A265F5', // Vibrant Purple
+  themeColor: '#A265F5', // Vibrant Purple (Used for light mode, dark mode might override this if specified differently)
   width: 'device-width',
   initialScale: 1,
   minimumScale: 1,
@@ -40,13 +40,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // `LanguageProvider` no longer uses a function child.
-  // The `<html>` tag attributes are set here directly for SSR with a default.
-  // `LanguageProvider`'s `useEffect` will update them on the client based on stored preferences.
   return (
-    // Default to 'ar' for SSR lang/dir, as LanguageProvider state initializes to 'ar'.
-    // Client-side useEffect in LanguageProvider will update this based on localStorage after hydration.
-    <html lang="ar" dir="rtl">
+    // Default to 'ar' for SSR lang/dir. Add 'dark' class for default dark theme.
+    // Client-side useEffect in LanguageProvider will update lang/dir based on localStorage after hydration.
+    <html lang="ar" dir="rtl" className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         <LanguageProvider> {/* LanguageProvider now wraps the content inside <body> */}
           <div className="flex flex-col min-h-screen">
